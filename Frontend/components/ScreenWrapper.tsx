@@ -31,7 +31,7 @@ const ScreenWrapper = ({
     <ImageBackground
       style={{
         flex: 1,
-        backgroundColor: isModal ? colors.black : colors.neutral900,
+        backgroundColor: isModal ? colors.white : colors.neutral900,
       }}
       imageStyle={{ opacity: showPattern ? bgOpacity : 0 }}
       source={require("../assets/images/bgPattern.png")}

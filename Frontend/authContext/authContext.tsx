@@ -5,6 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import { useRouter } from "expo-router";
 import { Alert } from "react-native";
+import { connectSocket, disconnectSocket } from "@/socket/socket";
 
 export const AuthContext = createContext<AuthContextProps>({
   token: null,
@@ -26,6 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const loadToken = async () => {
     const storedToken = await AsyncStorage.getItem("token");
+    // console.log("this is storedToken", storedToken);
     if (storedToken) {
       try {
         const decoded = jwtDecode<DecodedTokenProps>(storedToken);
@@ -35,10 +37,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           gotoWelcomePage();
         }
         // user is locged in
-        console.log(decoded);
+        // console.log("this is decoded", decoded);
 
         setToken(storedToken);
         setUser(decoded.user);
+        await connectSocket();
         gotoHomePage();
       } catch (error) {
         gotoWelcomePage();
@@ -64,14 +67,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setToken(token);
     await AsyncStorage.setItem("token", token);
     const decode = jwtDecode<DecodedTokenProps>(token);
-    console.log("Decoded Token", decode);
+    // console.log("Decoded Token", decode);
 
     setUser(decode.user);
   };
   const signIn = async (email: string, password: string) => {
     try {
       const response = await login(email, password);
-      updateToken(response.token);
+      await updateToken(response.token);
+      await connectSocket();
       router.replace("/(main)/home");
     } catch (error: any) {
       Alert.alert("Sign Up", error.message);
@@ -87,7 +91,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   ) => {
     try {
       const response = await register(name, email, password, avatar);
-      updateToken(response.token);
+      await updateToken(response.token);
+      await connectSocket();
       console.log("User", response.data);
       console.log("Token", response.token);
 
@@ -101,6 +106,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setToken(null);
     setUser(null);
     await AsyncStorage.removeItem("token");
+    await disconnectSocket();
     router.replace("/(auth)/welcome");
   };
   return (

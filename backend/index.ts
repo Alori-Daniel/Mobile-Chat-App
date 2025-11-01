@@ -4,6 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./config/db";
 import authRoutes from "./routes/auth.routes";
+import { initializeSocketIO } from "./socket/socket";
 
 dotenv.config();
 
@@ -21,6 +22,9 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 const server = http.createServer(app);
+
+// listen to socket events
+initializeSocketIO(server);
 
 connectDB()
   .then(() => {
