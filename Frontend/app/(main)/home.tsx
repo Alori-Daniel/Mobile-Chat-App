@@ -1,5 +1,11 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import React from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import React, { useState } from "react";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import Typo from "@/components/Typo";
 import { useAuth } from "@/authContext/authContext";
@@ -8,10 +14,14 @@ import Button from "@/components/Button";
 import { useEffect } from "react";
 import { testSocket } from "@/socket/socketEvents";
 import { verticalScale } from "@/utils/styling";
-import { GearSixIcon } from "phosphor-react-native";
+import { GearSixIcon, Plus } from "phosphor-react-native";
 import { useRouter } from "expo-router";
+import ConversationItem from "@/components/ConversationItem";
+import Loading from "@/components/Loading";
 const Home = () => {
   const { user: currentUser, signOut } = useAuth();
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const handleLogout = () => {
     signOut();
@@ -28,6 +38,67 @@ const Home = () => {
   // const testSocketCallbackHandler = (data: any) => {
   //   console.log("got response from testSocket event is data", data);
   // };
+  const conversations = [
+    {
+      name: "Alice",
+      type: "direct",
+      lastMessage: {
+        senderName: "Alice",
+        content: "Hello how is it going",
+        createdAt: "2024-11-01T14:39:08.000Z",
+      },
+    },
+    {
+      name: "Peace",
+      type: "direct",
+      lastMessage: {
+        senderName: "Alice",
+        content: "Hello how is it going",
+        createdAt: "2025-11-03T14:39:00.000Z",
+      },
+    },
+    {
+      name: "James",
+      type: "direct",
+      lastMessage: {
+        senderName: "Alice",
+        content: "Hello how is it going",
+        createdAt: "2025-11-03T14:39:00.000Z",
+      },
+    },
+    {
+      name: "Jake Group",
+      type: "group",
+      lastMessage: {
+        senderName: "Alice",
+        content: "Hello how is it going",
+        createdAt: "2025-11-03T14:39:00.000Z",
+      },
+    },
+    {
+      name: "Paul Group",
+      type: "group",
+      lastMessage: {
+        senderName: "Alice",
+        content: "Hello how is it going",
+        createdAt: "2025-11-03T14:39:00.000Z",
+      },
+    },
+  ];
+  let directConversations = conversations
+    .filter((item: any) => item.type == "direct")
+    .sort((a: any, b: any) => {
+      const aDate = a?.lastMessage?.createdAt || a.createdAt;
+      const bDate = b?.lastMessage?.createdAt || b.createdAt;
+      return new Date(bDate).getTime() - new Date(aDate).getTime();
+    });
+  let groupConversations = conversations
+    .filter((item: any) => item.type == "group")
+    .sort((a: any, b: any) => {
+      const aDate = a?.lastMessage?.createdAt || a.createdAt;
+      const bDate = b?.lastMessage?.createdAt || b.createdAt;
+      return new Date(bDate).getTime() - new Date(aDate).getTime();
+    });
   return (
     <ScreenWrapper showPattern={true} bgOpacity={0.4}>
       <View style={styles.container}>
@@ -59,12 +130,91 @@ const Home = () => {
             />
           </TouchableOpacity>
         </View>
-        <View style={styles.content}></View>
+        <View style={styles.content}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingVertical: spacingY._20 }}
+          >
+            <View style={styles.navBar}>
+              <View style={styles.tabs}>
+                <TouchableOpacity
+                  style={[
+                    styles.tabStyle,
+                    selectedTab === 0 && styles.activeTabStyle,
+                  ]}
+                  onPress={() => setSelectedTab(0)}
+                >
+                  <Typo size={16} fontWeight={"600"}>
+                    Direct Messages
+                  </Typo>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.tabStyle,
+                    selectedTab === 1 && styles.activeTabStyle,
+                  ]}
+                  onPress={() => setSelectedTab(1)}
+                >
+                  <Typo size={16} fontWeight={"600"}>
+                    Groups
+                  </Typo>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.conversationList}>
+              {selectedTab === 0 &&
+                directConversations.map((item: any, index: number) => {
+                  return (
+                    <ConversationItem
+                      key={index}
+                      item={item}
+                      router={router}
+                      showDivider={directConversations.length != index + 1}
+                    />
+                  );
+                })}
+              {selectedTab === 1 &&
+                groupConversations.map((item: any, index: number) => {
+                  return (
+                    <ConversationItem
+                      key={index}
+                      item={item}
+                      router={router}
+                      showDivider={groupConversations.length != index + 1}
+                    />
+                  );
+                })}
+            </View>
+            {!loading &&
+              selectedTab == 0 &&
+              directConversations.length == 0 && (
+                <Typo style={{ textAlign: "center" }}>
+                  no direct conversations
+                </Typo>
+              )}
+            {!loading && selectedTab == 1 && groupConversations.length == 0 && (
+              <Typo style={{ textAlign: "center" }}>
+                You havent joined any groups
+              </Typo>
+            )}
+            {loading && <Loading />}
+          </ScrollView>
+        </View>
       </View>
 
-      {/* <Button onPress={handleLogout}>
-        <Typo>Logout</Typo>
-      </Button> */}
+      <Button
+        style={styles.floatingButton}
+        onPress={() =>
+          router.push({
+            pathname: "/(main)/newConversationModal",
+            params: {
+              isGroup: selectedTab,
+            },
+          })
+        }
+      >
+        <Plus weight="bold" size={verticalScale(24)} color={colors.black} />
+      </Button>
     </ScreenWrapper>
   );
 };
