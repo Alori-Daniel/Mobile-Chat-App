@@ -4,11 +4,24 @@ import { colors, spacingX, spacingY } from "@/constants/theme";
 import Avatar from "./Avatar";
 import Typo from "./Typo";
 import moment from "moment";
-const ConversationItem = ({ item, showDivider, router }: any) => {
-  const openConversation = () => {};
+import { ConversationListItemProps } from "@/types";
+import { useAuth } from "@/authContext/authContext";
+const ConversationItem = ({
+  item,
+  showDivider,
+  router,
+}: ConversationListItemProps) => {
+  const { user: currentUser } = useAuth();
 
   const lastMessage: any = item.lastMessage;
   const isDirect = item.type == "direct";
+  let avatar = item.avatar;
+  const otherParticipants = isDirect
+    ? item.participants.find((p: any) => p._id != currentUser?.id)
+    : null;
+  if (isDirect && otherParticipants) {
+    avatar = otherParticipants.avatar;
+  }
 
   const getLastMessageDate = () => {
     if (!lastMessage?.createdAt) return null;
@@ -28,6 +41,19 @@ const ConversationItem = ({ item, showDivider, router }: any) => {
 
     return lastMessage?.attachment ? "Image" : lastMessage?.content;
   };
+  const openConversation = () => {
+    router.push({
+      pathname: "/(main)/conversation",
+      params: {
+        id: item._id,
+        name: item.name,
+        avatar: avatar,
+        type: item.type,
+        participants: JSON.stringify(item.participants),
+      },
+    });
+  };
+
   return (
     <View>
       <TouchableOpacity
@@ -35,12 +61,12 @@ const ConversationItem = ({ item, showDivider, router }: any) => {
         style={styles.conversationItem}
       >
         <View>
-          <Avatar uri={null} size={47} isGroup={item.type == "group"} />
+          <Avatar uri={avatar} size={47} isGroup={item.type == "group"} />
         </View>
         <View style={{ flex: 1 }}>
           <View style={styles.row}>
             <Typo size={16} fontWeight={"600"}>
-              {item.name}
+              {isDirect ? otherParticipants?.name : item.name}
             </Typo>
             {item.lastMessage && <Typo size={14}>{getLastMessageDate()}</Typo>}
           </View>

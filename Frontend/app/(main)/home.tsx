@@ -12,89 +12,106 @@ import { useAuth } from "@/authContext/authContext";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import Button from "@/components/Button";
 import { useEffect } from "react";
-import { testSocket } from "@/socket/socketEvents";
+import {
+  getConversation,
+  newConversation,
+  testSocket,
+} from "@/socket/socketEvents";
 import { verticalScale } from "@/utils/styling";
 import { GearSixIcon, Plus } from "phosphor-react-native";
 import { useRouter } from "expo-router";
 import ConversationItem from "@/components/ConversationItem";
 import Loading from "@/components/Loading";
+import { ConversationProps, ResponseProps } from "@/types";
 const Home = () => {
   const { user: currentUser, signOut } = useAuth();
   const [selectedTab, setSelectedTab] = useState(0);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [conversations, setConversations] = useState<ConversationProps[]>([]);
   const handleLogout = () => {
     signOut();
   };
 
-  // useEffect(() => {
-  //   testSocket(testSocketCallbackHandler);
-  //   testSocket(null);
+  useEffect(() => {
+    getConversation(processConversation);
+    newConversation(newConversationHandler);
+    getConversation(null);
 
-  //   return () => {
-  //     testSocket(testSocketCallbackHandler, true);
-  //   };
-  // }, []);
-  // const testSocketCallbackHandler = (data: any) => {
-  //   console.log("got response from testSocket event is data", data);
-  // };
-  const conversations = [
-    {
-      name: "Alice",
-      type: "direct",
-      lastMessage: {
-        senderName: "Alice",
-        content: "Hello how is it going",
-        createdAt: "2024-11-01T14:39:08.000Z",
-      },
-    },
-    {
-      name: "Peace",
-      type: "direct",
-      lastMessage: {
-        senderName: "Alice",
-        content: "Hello how is it going",
-        createdAt: "2025-11-03T14:39:00.000Z",
-      },
-    },
-    {
-      name: "James",
-      type: "direct",
-      lastMessage: {
-        senderName: "Alice",
-        content: "Hello how is it going",
-        createdAt: "2025-11-03T14:39:00.000Z",
-      },
-    },
-    {
-      name: "Jake Group",
-      type: "group",
-      lastMessage: {
-        senderName: "Alice",
-        content: "Hello how is it going",
-        createdAt: "2025-11-03T14:39:00.000Z",
-      },
-    },
-    {
-      name: "Paul Group",
-      type: "group",
-      lastMessage: {
-        senderName: "Alice",
-        content: "Hello how is it going",
-        createdAt: "2025-11-03T14:39:00.000Z",
-      },
-    },
-  ];
+    return () => {
+      getConversation(processConversation, true);
+      newConversation(newConversationHandler, true);
+    };
+  }, []);
+  const processConversation = (res: ResponseProps) => {
+    console.log("got response from getConversation event is data", res);
+    if (res.success) {
+      setConversations(res.data);
+    }
+  };
+  const newConversationHandler = (res: ResponseProps) => {
+    console.log("got response from newConversation event is data", res);
+    if (res.success && res.data.isNew == true) {
+      setConversations((prev) => [...prev, res.data]);
+    }
+  };
+  // const conversations = [
+  //   {
+  //     name: "Alice",
+  //     type: "direct",
+  //     lastMessage: {
+  //       senderName: "Alice",
+  //       content: "Hello how is it going",
+  //       createdAt: "2024-11-01T14:39:08.000Z",
+  //     },
+  //   },
+  //   {
+  //     name: "Peace",
+  //     type: "direct",
+  //     lastMessage: {
+  //       senderName: "Alice",
+  //       content: "Hello how is it going",
+  //       createdAt: "2025-11-03T14:39:00.000Z",
+  //     },
+  //   },
+  //   {
+  //     name: "James",
+  //     type: "direct",
+  //     lastMessage: {
+  //       senderName: "Alice",
+  //       content: "Hello how is it going",
+  //       createdAt: "2025-11-03T14:39:00.000Z",
+  //     },
+  //   },
+  //   {
+  //     name: "Jake Group",
+  //     type: "group",
+  //     lastMessage: {
+  //       senderName: "Alice",
+  //       content: "Hello how is it going",
+  //       createdAt: "2025-11-03T14:39:00.000Z",
+  //     },
+  //   },
+  //   {
+  //     name: "Paul Group",
+  //     type: "group",
+  //     lastMessage: {
+  //       senderName: "Alice",
+  //       content: "Hello how is it going",
+  //       createdAt: "2025-11-03T14:39:00.000Z",
+  //     },
+  //   },
+  // ];
   let directConversations = conversations
-    .filter((item: any) => item.type == "direct")
-    .sort((a: any, b: any) => {
+    .filter((item: ConversationProps) => item.type == "direct")
+    .sort((a: ConversationProps, b: ConversationProps) => {
       const aDate = a?.lastMessage?.createdAt || a.createdAt;
       const bDate = b?.lastMessage?.createdAt || b.createdAt;
       return new Date(bDate).getTime() - new Date(aDate).getTime();
     });
   let groupConversations = conversations
-    .filter((item: any) => item.type == "group")
-    .sort((a: any, b: any) => {
+    .filter((item: ConversationProps) => item.type == "group")
+    .sort((a: ConversationProps, b: ConversationProps) => {
       const aDate = a?.lastMessage?.createdAt || a.createdAt;
       const bDate = b?.lastMessage?.createdAt || b.createdAt;
       return new Date(bDate).getTime() - new Date(aDate).getTime();
@@ -163,27 +180,31 @@ const Home = () => {
             </View>
             <View style={styles.conversationList}>
               {selectedTab === 0 &&
-                directConversations.map((item: any, index: number) => {
-                  return (
-                    <ConversationItem
-                      key={index}
-                      item={item}
-                      router={router}
-                      showDivider={directConversations.length != index + 1}
-                    />
-                  );
-                })}
+                directConversations.map(
+                  (item: ConversationProps, index: number) => {
+                    return (
+                      <ConversationItem
+                        key={index}
+                        item={item}
+                        router={router}
+                        showDivider={directConversations.length != index + 1}
+                      />
+                    );
+                  }
+                )}
               {selectedTab === 1 &&
-                groupConversations.map((item: any, index: number) => {
-                  return (
-                    <ConversationItem
-                      key={index}
-                      item={item}
-                      router={router}
-                      showDivider={groupConversations.length != index + 1}
-                    />
-                  );
-                })}
+                groupConversations.map(
+                  (item: ConversationProps, index: number) => {
+                    return (
+                      <ConversationItem
+                        key={index}
+                        item={item}
+                        router={router}
+                        showDivider={groupConversations.length != index + 1}
+                      />
+                    );
+                  }
+                )}
             </View>
             {!loading &&
               selectedTab == 0 &&

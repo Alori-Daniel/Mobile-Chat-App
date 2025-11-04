@@ -6,8 +6,8 @@ import {
   View,
   Alert,
 } from "react-native";
-import React, { useState } from "react";
-import { useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import Avatar from "@/components/Avatar";
@@ -19,60 +19,63 @@ import Input from "@/components/Input";
 import { useAuth } from "@/authContext/authContext";
 import Button from "@/components/Button";
 import { verticalScale } from "@/utils/styling";
+import { getContacts, newConversation } from "@/socket/socketEvents";
+import { uploadFileToCloudinary } from "@/services/imageService";
 const newConversationModal = () => {
   const { isGroup } = useLocalSearchParams();
   const isGroupMode = isGroup === "1";
-
-  const contacts = [
-    {
-      id: 1,
-      name: "Alice",
-      avatar:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    },
-    {
-      id: 2,
-      name: "Bob",
-      avatar:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    },
-    {
-      id: 3,
-      name: "Charlie",
-      avatar:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    },
-    {
-      id: 4,
-      name: "David",
-      avatar:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    },
-    {
-      id: 5,
-      name: "Eve",
-      avatar:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    },
-    {
-      id: 6,
-      name: "Eve",
-      avatar:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    },
-    {
-      id: 7,
-      name: "Eve",
-      avatar:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    },
-    {
-      id: 8,
-      name: "Eve",
-      avatar:
-        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    },
-  ];
+  const router = useRouter();
+  const [contacts, setContacts] = useState<any[]>([]);
+  //   const contacts = [
+  //     {
+  //       id: 1,
+  //       name: "Alice",
+  //       avatar:
+  //         "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+  //     },
+  //     {
+  //       id: 2,
+  //       name: "Bob",
+  //       avatar:
+  //         "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+  //     },
+  //     {
+  //       id: 3,
+  //       name: "Charlie",
+  //       avatar:
+  //         "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+  //     },
+  //     {
+  //       id: 4,
+  //       name: "David",
+  //       avatar:
+  //         "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+  //     },
+  //     {
+  //       id: 5,
+  //       name: "Eve",
+  //       avatar:
+  //         "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+  //     },
+  //     {
+  //       id: 6,
+  //       name: "Eve",
+  //       avatar:
+  //         "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+  //     },
+  //     {
+  //       id: 7,
+  //       name: "Eve",
+  //       avatar:
+  //         "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+  //     },
+  //     {
+  //       id: 8,
+  //       name: "Eve",
+  //       avatar:
+  //         "https://images.unsplash.com/photo-1506794778202-cad84cf45f1a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+  //     },
+  //   ];
   const [groupAvatar, setGroupAvatar] = useState<{ uri: string } | null>(null);
   const [groupName, setGroupName] = useState("");
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
@@ -80,6 +83,44 @@ const newConversationModal = () => {
   );
   const { user: currentUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    getContacts(processGetContacts);
+    newConversation(processNewConversation);
+
+    getContacts(null);
+    return () => {
+      getContacts(processGetContacts);
+      newConversation(processNewConversation);
+    };
+  }, []);
+
+  const processGetContacts = (res: any) => {
+    if (res.success) {
+      //   console.log("contacts", res.data);
+      setContacts(res.data);
+    }
+  };
+  const processNewConversation = (res: any) => {
+    // console.log("newConversation result", res.data);
+    setIsLoading(false);
+    if (res.success) {
+      router.back();
+      router.push({
+        pathname: "/(main)/conversation",
+        params: {
+          id: res.data._id,
+          name: res.data.name,
+          avatar: res.data.avatar,
+          type: res.data.type,
+          participants: JSON.stringify(res.data.participants),
+        },
+      });
+    } else {
+      console.log("Error creating conversation", res.msg);
+      Alert.alert("Error", res.msg);
+    }
+  };
   const onPickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -94,10 +135,12 @@ const newConversationModal = () => {
   };
   const toggleParticipant = (user: any) => {
     setSelectedParticipants((prev: any) => {
-      if (prev.includes(user.id)) {
-        return prev.filter((id: string) => id !== user.id);
+      //   console.log("prev", prev);
+      //   console.log("user", user);
+      if (prev.includes(user._id)) {
+        return prev.filter((id: string) => id !== user._id);
       } else {
-        return [...prev, user.id];
+        return [...prev, user._id];
       }
     });
   };
@@ -109,13 +152,41 @@ const newConversationModal = () => {
     if (isGroupMode) {
       toggleParticipant(user);
     } else {
+      console.log("user", user);
+
+      newConversation({
+        type: "direct",
+        participants: [currentUser.id, user._id],
+      });
     }
   };
-  const createGroup = () => {
+  const createGroup = async () => {
     if (!groupName.trim() || !currentUser || selectedParticipants.length < 2)
       return;
-
-    //todo create group
+    setIsLoading(true);
+    try {
+      let avatar = null;
+      if (groupAvatar) {
+        const uploadResult = await uploadFileToCloudinary(
+          groupAvatar,
+          "group-avatars"
+        );
+        if (uploadResult.success) {
+          avatar = uploadResult.data;
+        }
+      }
+      newConversation({
+        type: "group",
+        participants: [currentUser.id, ...selectedParticipants],
+        name: groupName,
+        avatar,
+      });
+    } catch (error: any) {
+      console.log("Error creating group", error);
+      Alert.alert("Error", error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
   return (
     <ScreenWrapper isModal={true}>
@@ -150,7 +221,7 @@ const newConversationModal = () => {
           contentContainerStyle={styles.contactList}
         >
           {contacts.map((user: any, index: number) => {
-            const isSelected = selectedParticipants.includes(user.id);
+            const isSelected = selectedParticipants.includes(user._id);
             return (
               <TouchableOpacity
                 style={[
